@@ -61,6 +61,8 @@ def on_message(client:mqtt.Client, userdata, msg:mqtt.MQTTMessage) -> None:
         GPIO.output(8, GPIO.LOW)
         status_info = {"status": "OFF", "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
         client.publish(light_status_topic, json.dumps(status_info))
+    else:
+        logger.error("Invalid payload received")
 
 if __name__ == "__main__":
     try:
