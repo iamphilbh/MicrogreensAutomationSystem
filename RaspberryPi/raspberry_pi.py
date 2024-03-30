@@ -49,17 +49,17 @@ def on_message(client:mqtt.Client, userdata, msg:mqtt.MQTTMessage) -> None:
     logger.info("Topic: "+msg.topic+", payload: "+str(msg.payload))
 
     payload = msg.payload.decode('utf-8')
-    light_status_topic = "light/status"
+    light_status_topic = "light/state"
 
     if payload.upper() == "ON":
         logger.info("Turning LED on...")
         GPIO.output(8, GPIO.HIGH)
-        status_info = {"status": "ON", "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+        status_info = {"state": "ON", "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
         client.publish(light_status_topic, json.dumps(status_info))
     elif payload.upper() == "OFF":    
         logger.info("Turning LED off...")
         GPIO.output(8, GPIO.LOW)
-        status_info = {"status": "OFF", "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+        status_info = {"state": "OFF", "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
         client.publish(light_status_topic, json.dumps(status_info))
     else:
         logger.error("Invalid payload received")
