@@ -1,8 +1,11 @@
 import logging
 from datetime import datetime
 import json
+import asyncio
+import os
 
-import paho.mqtt.client as mqtt
+from dotenv import load_dotenv
+from gmqtt import Client as MQTTClient
 import RPi.GPIO as GPIO
 
 # Set up logging
@@ -14,65 +17,73 @@ GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(8, GPIO.OUT, initial=GPIO.LOW)
 
-def on_connect(client:mqtt.Client, userdata, flags, rc:int) -> None:
+# Load environment variables from .env file
+load_dotenv()
+# Accessing variables
+mqtt_broker = os.getenv("MQTT_BROKER")
+mqtt_port = int(os.getenv("MQTT_PORT", 1883))  # Providing a default value if not set
+
+async def on_connect(client:MQTTClient, flags, rc, properties) -> None:
     """
     Callback function that is called when the MQTT client successfully connects to the broker.
-    
-    Parameters
-    ----------
-        client (mqtt.Client): The client instance for this callback
-        userdata: The private user data as set in Client()
-        flags: Response flags sent by the broker
-        rc (int): The connection result
-
-    Returns
-    -------
-        None
     """
-    logger.info("Connected with result code "+str(rc))
-    client.subscribe("light/switch")
+    logger.info(f"Connected with result code: {rc}")
+    client.subscribe([
+        ("light/switch", 0),
+        ("water/switch", 0),
+        ("fan/switch", 0)
+    ])
 
-def on_message(client:mqtt.Client, userdata, msg:mqtt.MQTTMessage) -> None:
+async def on_message(client:MQTTClient, topic, payload, qos, properties) -> None:
     """
     Callback function that is called when a message is received from the broker.
-    
-    Parameters
-    ----------
-        client (mqtt.Client): The client instance for this callback
-        userdata: The private user data as set in Client()
-        msg (mqtt.MQTTMessage): An instance of MQTTMessage. This is a class with members topic, payload, qos, retain.
-
-    Returns
-    -------
-        None
     """
-    logger.info("Topic: "+msg.topic+", payload: "+str(msg.payload))
+    payload = payload.decode("utf-8")
+    logger.info(f"Topic: {topic}, payload: {payload}")
+    
+    # Dispatch message based on topic
+    if topic.startswith("light"):
+        pass
+        # await handle_system(client, payload, "light/switch", "light", 8)
+    elif topic.startswith("water"):
+        pass
+        # await handle_system(client, payload, "water/switch", "water", 10)
+    elif topic.startswith("fan"):
+        pass
+        # await handle_system(client, payload, "fan/switch", "fan", 12)
+    else:
+        logger.error(f"Unhandled topic: {topic}")
 
-    payload = msg.payload.decode('utf-8')
-    light_status_topic = "light/state"
-
+async def handle_system(client:MQTTClient, payload, pub_topic:str, system_type:str, gpio_pin:int):
+    # Handle system control logic
     if payload.upper() == "ON":
-        logger.info("Turning LED on...")
-        GPIO.output(8, GPIO.HIGH)
-        status_info = {"state": "ON", "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-        client.publish(light_status_topic, json.dumps(status_info))
+        logger.info(f"Turning {system_type} on...")
+        GPIO.output(gpio_pin, GPIO.HIGH)
+        state_info = {"state": "ON", "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+        client.publish(pub_topic, json.dumps(state_info))
     elif payload.upper() == "OFF":    
-        logger.info("Turning LED off...")
-        GPIO.output(8, GPIO.LOW)
-        status_info = {"state": "OFF", "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-        client.publish(light_status_topic, json.dumps(status_info))
+        logger.info(f"Turning {system_type} off...")
+        GPIO.output(gpio_pin, GPIO.LOW)
+        state_info = {"state": "OFF", "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+        client.publish(pub_topic, json.dumps(state_info))
     else:
         logger.error("Invalid payload received")
 
-if __name__ == "__main__":
-    try:
-        client = mqtt.Client()
-        client.on_connect = on_connect
-        client.on_message = on_message
 
-        client.connect("localhost", 1883, 60)
-        client.loop_forever()
+async def main():
+    client = MQTTClient()
+    client.on_connect = on_connect
+    client.on_message = on_message
+
+    await client.connect(mqtt_broker, mqtt_port)
+    
+    try:
+        await asyncio.get_event_loop().run_forever()
     except KeyboardInterrupt:
         logger.info("Exiting...")
-    except Exception as e:
-        logger.error(f"An error occurred: {e}")
+    finally:
+        await client.disconnect()
+        GPIO.cleanup()
+
+if __name__ == "__main__":
+    asyncio.run(main())
