@@ -6,16 +6,10 @@ import os
 
 from dotenv import load_dotenv
 from gmqtt import Client as MQTTClient, Subscription
-import RPi.GPIO as GPIO
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Set up GPIO
-GPIO.setwarnings(False)
-GPIO.setmode(GPIO.BOARD)
-GPIO.setup(8, GPIO.OUT, initial=GPIO.LOW)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -36,7 +30,7 @@ def on_connect(client: MQTTClient, flags, rc, properties) -> None:
         ]
     )
 
-async def on_message(client:MQTTClient, topic, payload, qos, properties) -> None:
+def on_message(client:MQTTClient, topic, payload, qos, properties) -> None:
     """
     Callback function that is called when a message is received from the broker.
     """
@@ -57,19 +51,18 @@ async def handle_system(client:MQTTClient, payload, pub_topic:str, system_type:s
     # Handle system control logic
     if payload.upper() == "ON":
         logger.info(f"Turning {system_type} on...")
-        GPIO.output(gpio_pin, GPIO.HIGH)
         state_info = {"state": "ON", "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
         client.publish(pub_topic, json.dumps(state_info))
     elif payload.upper() == "OFF":    
         logger.info(f"Turning {system_type} off...")
-        GPIO.output(gpio_pin, GPIO.LOW)
         state_info = {"state": "OFF", "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
         client.publish(pub_topic, json.dumps(state_info))
     else:
         logger.error("Invalid payload received")
 
+
 async def main():
-    client = MQTTClient(client_id="raspberry_pi")
+    client = MQTTClient(client_id="raspberry_pi_v2")
     client.on_connect = on_connect
     client.on_message = on_message
 
@@ -82,7 +75,6 @@ async def main():
         logger.info("Exiting...")
     finally:
         await client.disconnect()
-        GPIO.cleanup()
 
 if __name__ == "__main__":
     asyncio.run(main())
