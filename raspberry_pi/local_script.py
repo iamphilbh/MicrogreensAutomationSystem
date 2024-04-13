@@ -60,7 +60,6 @@ async def handle_system(client:MQTTClient, payload, pub_topic:str, system_type:s
     else:
         logger.error("Invalid payload received")
 
-
 async def main():
     client = MQTTClient(client_id="raspberry_pi_v2")
     client.on_connect = on_connect
