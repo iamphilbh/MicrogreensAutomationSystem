@@ -1,62 +1,73 @@
-from gmqtt import Client as MQTTClient
+import logging
+from datetime import datetime
+import json
+import asyncio
+import os
 
-# Set up the MQTT client
-client = MQTTClient("fastapi-mqtt-client")
+from dotenv import load_dotenv
+from gmqtt import Client as MQTTClient, Subscription
 
-# Variable to store the last received message
-last_message = None
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def on_message(client, message):
+# Load environment variables from .env file
+load_dotenv()
+# Accessing variables
+mqtt_broker = os.getenv("MQTT_BROKER")
+mqtt_port = int(os.getenv("MQTT_PORT", 1883))  # Providing a default value if not set
+
+def on_connect(client: MQTTClient, flags, rc, properties) -> None:
+    """
+    Callback function that is called when the MQTT client successfully connects to the broker.
+    """
+    logger.info(f"Connected with result code: {rc}")
+    client.subscribe(
+        [
+            Subscription("light/state", qos=0),
+            Subscription("water/state", qos=0),
+            Subscription("fan/state", qos=0)
+        ]
+    )
+
+def on_message(client:MQTTClient, topic, payload, qos, properties) -> None:
+    """
+    Callback function that is called when a message is received from the broker.
+    """
+    payload = json.loads(payload.decode("utf-8"))
+    logger.info(f"Topic: {topic}, payload: {payload}")
     
-    print("in on_message")
-    last_message = message.payload.decode("utf-8")
+    # Dispatch message based on topic
+    if topic.startswith("light"):
+        asyncio.create_task(handle_system(client, payload, "light"))
+    elif topic.startswith("water"):
+        asyncio.create_task(handle_system(client, payload, "water"))
+    elif topic.startswith("fan"):
+        asyncio.create_task(handle_system(client, payload, "fan"))
+    else:
+        logger.error(f"Unhandled topic: {topic}")
 
-async def setup_mqtt():
-    # Connect to the broker
-    await client.connect("localhost", 1883)
+async def handle_system(client:MQTTClient, payload, system_type:str,):
+    # Handle system control logic
+    if payload.get("state") in ("ON", "OFF"):
+        logger.info(f"Processing {system_type}, state: {payload.get('state')}")
+    else:
+        logger.error("Invalid payload received")
 
-async def publish(topic, message):
-    # Publish a message to a topic
-    client.publish(topic, message, qos=1)
-
-async def subscribe(topic):
-    # Subscribe to a topic and return the last message received
+async def main():
+    client = MQTTClient(client_id="backend_client")
+    client.on_connect = on_connect
     client.on_message = on_message
-    client.subscribe(topic, qos=1)
-    print("in subscribe")
-    print(last_message)
-    return last_message
 
+    await client.connect(mqtt_broker, mqtt_port)
+    
+    try:
+        while True:
+            await asyncio.sleep(1)
+    except KeyboardInterrupt:
+        logger.info("Exiting...")
+    finally:
+        await client.disconnect()
 
-
-
-
-# # Set up logging
-# logging.basicConfig(level=logging.INFO)
-# logger = logging.getLogger(__name__)
-
-# def on_connect(client: MQTTClient, flags, rc, properties) -> None:
-#     logger.info(f"Connected with result code: {rc}")
-#     client.subscribe(
-#         [
-#             Subscription("light/switch", qos=0),
-#             Subscription("light/state", qos=0),
-#             Subscription("water/switch", qos=0),
-#             Subscription("water/state", qos=0),
-#             Subscription("fan/switch", qos=0),
-#             Subscription("fan/state", qos=0)
-#         ]
-#     )
-
-# def on_message(client, topic, payload, qos, properties):
-#     payload = payload.decode("utf-8")
-#     logger.info(f"Topic: {topic}, payload: {payload}")
-
-# def on_publish(client, topic, payload, qos, properties):
-#     logger.info('MESSAGE PUBLISHED')
-
-# def publish(client, topic, message):
-#     client.publish(topic, message)
-
-# def subscribe(client, topic):
-#     return client.subscribe(topic)
+if __name__ == "__main__":
+    asyncio.run(main())
