@@ -1,30 +1,29 @@
+from typing import Dict
 from fastapi import FastAPI
-from gmqtt import Client as MQTTClient, Subscription
 from pydantic import BaseModel
 
-from client import publish, subscribe, setup_mqtt
+from .mqtt_client import MQTTClientWrapper
 
 app = FastAPI()
+
+mqtt_client = MQTTClientWrapper()
 
 class LightState(BaseModel):
     state: str
 
 @app.get("/")
-def read_root() -> dict:
+def read_root() -> Dict:
     return {"message": "Hello, World!"}
 
-@app.on_event("startup")
-async def startup_event():
-    await setup_mqtt()
-
 @app.post("/change_light_state")
-async def change_light_state(light_state: LightState) -> dict:
+async def change_light_state(light_state: LightState) -> Dict:
     # Publish a message to the "light/switch" topic
-    await publish("light/switch", light_state.state)
+    await MQTTClientWrapper.publish("light/switch", light_state.state)
     return {"light_state": light_state.state, "status": "sent"}
 
 @app.get("/get_light_state")
-async def get_light_state() -> dict:
+async def get_light_state() -> Dict:
     # Subscribe to the "light/state" topic
-    result = await subscribe("light/state")
+    # Retrieve from Database
+    result = "Retrieving from database..."
     return {"state": result}
