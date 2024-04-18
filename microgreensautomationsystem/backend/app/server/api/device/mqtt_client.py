@@ -74,9 +74,19 @@ class MQTTClientWrapper:
             # Save the new state to the database
             self.save_light_state_to_db(self.last_message)
 
-    def save_light_state_to_db(self, state:Dict) -> None:
+    async def save_light_state_to_db(self, state: Dict) -> None:
         # Implement this method to save the state to your database
         SharedLogger.get_logger().info(f"Saving light state to database: {state}")
+
+        # url = "http://your-database-api-url.com/save-light-state"
+        # headers = {"Content-Type": "application/json"}
+        # data = json.dumps(state)
+
+        # async with httpx.AsyncClient() as client:
+        #     response = await client.post(url, headers=headers, data=data)
+
+        # if response.status_code != 200:
+        #     SharedLogger.get_logger().error(f"Failed to save light state to database: {response.text}")
 
     async def publish(self, topic, message):
         self.client.publish(topic, message, qos=0)
