@@ -1,0 +1,8 @@
+mqtt:
+  client_id: "fastapi_mqtt_client"
+  host: "localhost"
+  port: 1883
+  keepalive: 60
+  clean_session: true
+  subscribe_topics: 
+    - "light/state"

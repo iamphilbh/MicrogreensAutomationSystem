@@ -1,0 +1,6 @@
+fastapi
+gmqtt
+pydantic
+uvicorn
+htppx
+pyyaml
