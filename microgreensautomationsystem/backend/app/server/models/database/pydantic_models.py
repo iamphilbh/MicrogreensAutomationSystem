@@ -1,3 +1,4 @@
+from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel
 
@@ -12,4 +13,4 @@ class SystemEventCreate(BaseModel):
     system_type: str
     system_state: str
     system_event_timestamp: datetime
-    record_created_timestamp: datetime
+    record_created_timestamp: Optional[datetime] = None

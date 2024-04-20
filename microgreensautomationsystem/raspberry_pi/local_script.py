@@ -39,24 +39,24 @@ def on_message(client:MQTTClient, topic, payload, qos, properties) -> None:
     
     # Dispatch message based on topic
     if topic.startswith("light"):
-        asyncio.create_task(handle_system(client, payload, "light/state", "light", 8))
+        asyncio.create_task(handle_system(client, payload, "light", 8))
     elif topic.startswith("water"):
-        asyncio.create_task(handle_system(client, payload, "water/state", "water", 10))
+        asyncio.create_task(handle_system(client, payload, "water", 10))
     elif topic.startswith("fan"):
-        asyncio.create_task(handle_system(client, payload, "fan/state", "fan", 12))
+        asyncio.create_task(handle_system(client, payload, "fan", 12))
     else:
         logger.error(f"Unhandled topic: {topic}")
 
-async def handle_system(client:MQTTClient, payload, pub_topic:str, system_type:str, gpio_pin:int):
+async def handle_system(client:MQTTClient, payload, system_type:str, gpio_pin:int):
     # Handle system control logic
-    if payload.upper() == "ON":
-        logger.info(f"Turning {system_type} on...")
-        state_info = {"state": "ON", "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-        client.publish(pub_topic, json.dumps(state_info))
-    elif payload.upper() == "OFF":    
-        logger.info(f"Turning {system_type} off...")
-        state_info = {"state": "OFF", "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-        client.publish(pub_topic, json.dumps(state_info))
+    if payload.upper() in ("ON", "OFF"):
+        try:
+            logger.info(f"Turning {system_type} {payload.upper()}...")
+            # TODO: Implement GPIO control logic here
+            state_info = {"system_type": system_type, "system_state": payload.upper(), "system_event_timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+            client.publish(f"{system_type}/state", json.dumps(state_info))
+        except Exception as e:
+            logger.error(f"Error turning {system_type} {payload.upper()}: {e}")
     else:
         logger.error("Invalid payload received")
 

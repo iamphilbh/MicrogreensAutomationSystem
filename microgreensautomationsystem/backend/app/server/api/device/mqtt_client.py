@@ -1,10 +1,12 @@
 import json
 import yaml
 import os
+import asyncio
 from typing import List, Dict
 from gmqtt import Client as MQTTClient, Subscription
+import httpx
 
-from microgreensautomationsystem.core.logging.logger import SharedLogger
+from microgreensautomationsystem.core.logger import SharedLogger
 
 class MQTTClientWrapper:
     def __init__(self):
@@ -69,24 +71,21 @@ class MQTTClientWrapper:
     def on_message(self, client, topic, payload, qos, properties):
         self.last_message = json.loads(payload.decode("utf-8"))
         SharedLogger.get_logger().info(f"Received message: {self.last_message}")
+        asyncio.create_task(self.save_system_event_to_db(self.last_message))
 
-        if topic == "light/state":
-            # Save the new state to the database
-            self.save_light_state_to_db(self.last_message)
+    async def save_system_event_to_db(self, system_event: Dict) -> None:
+        system_type = system_event.get("system_type")
+        system_state = system_event.get("system_state")
+        SharedLogger.get_logger().info(f"Saving {system_type} state ({system_state}) to database...")
 
-    async def save_light_state_to_db(self, state: Dict) -> None:
-        # Implement this method to save the state to your database
-        SharedLogger.get_logger().info(f"Saving light state to database: {state}")
+        url = "http://localhost:8000/system_events/"
+        headers = {"Content-Type": "application/json"}
 
-        # url = "http://your-database-api-url.com/save-light-state"
-        # headers = {"Content-Type": "application/json"}
-        # data = json.dumps(state)
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, headers=headers, json=system_event)
 
-        # async with httpx.AsyncClient() as client:
-        #     response = await client.post(url, headers=headers, data=data)
-
-        # if response.status_code != 200:
-        #     SharedLogger.get_logger().error(f"Failed to save light state to database: {response.text}")
+        if response.status_code != 200:
+            SharedLogger.get_logger().error(f"Failed to save system state to database: {response.text}")
 
     async def publish(self, topic, message):
         self.client.publish(topic, message, qos=0)
