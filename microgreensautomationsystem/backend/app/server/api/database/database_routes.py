@@ -24,18 +24,17 @@ def get_db():
 
 @app.get("/")
 def root() -> Dict:
-    return {"message": "Hello, World!"}
+    return {"message": "Hello, World! This is the database API."}
 
-@app.post("/system_events/")
+@app.post("/api/system_events/create")
 def create_system_event(system_event:SystemEventCreate, db:Session=Depends(get_db)) -> SystemEvent:
-    system_event.record_created_timestamp = datetime.datetime.now()
-    db_system_event = FactSystemEvents(**system_event.model_dump())
+    db_system_event = FactSystemEvents(**system_event.model_dump(), record_created_timestamp=datetime.datetime.now())
     db.add(db_system_event)
     db.commit()
     db.refresh(db_system_event)
     return SystemEvent(**db_system_event.__dict__)
 
-@app.get("/system_events/{system_type}/last")
+@app.get("/api/system_events/{system_type}/last")
 def read_last_system_event(system_type:str, db:Session=Depends(get_db)) -> SystemEvent:
     db_system_event = (
         db.query(FactSystemEvents)
@@ -47,7 +46,7 @@ def read_last_system_event(system_type:str, db:Session=Depends(get_db)) -> Syste
         raise HTTPException(status_code=404, detail="System event not found!")
     return SystemEvent(**db_system_event.__dict__)
 
-@app.get("/system_events/{system_type}/all")
+@app.get("/api/system_events/{system_type}/all")
 def read_all_system_events(system_type: str, db: Session = Depends(get_db)) -> List[SystemEvent]:
     db_system_events = (
         db.query(FactSystemEvents)

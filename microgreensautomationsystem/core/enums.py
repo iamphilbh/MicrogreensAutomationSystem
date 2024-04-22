@@ -8,3 +8,5 @@ class SystemType(Enum):
 class SystemState(Enum):
     on = "ON"
     off = "OFF"
+
+print(SystemState.__members__.values())
