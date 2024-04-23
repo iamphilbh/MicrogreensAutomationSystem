@@ -1,12 +1,24 @@
 from enum import Enum
 
-class SystemType(Enum):
+class SystemType(str, Enum):
     light = "light"
     fan = "fan"
     pump = "pump"
 
-class SystemState(Enum):
-    on = "ON"
-    off = "OFF"
+    @classmethod
+    def _missing_(cls, value):
+        for member in cls:
+            if member.value == value.lower():
+                return member
+        raise ValueError(f"{value} is not a valid SystemType")
 
-print(SystemState.__members__.values())
+class SystemState(str, Enum):
+    ON = "ON"
+    OFF = "OFF"
+
+    @classmethod
+    def _missing_(cls, value):
+        for member in cls:
+            if member.value == value.upper():
+                return member
+        raise ValueError(f"{value} is not a valid SystemState")

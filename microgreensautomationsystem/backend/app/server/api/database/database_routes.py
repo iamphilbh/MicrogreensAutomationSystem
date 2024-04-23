@@ -1,13 +1,14 @@
 import datetime
-from typing import Dict, List
+from typing import Dict, List, Annotated
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.params import Depends
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from microgreensautomationsystem.backend.app.server.models.database.sqlalchemy_models import SessionLocal, Base, engine, FactSystemEvents
 from microgreensautomationsystem.backend.app.server.models.database.pydantic_models import SystemEvent, SystemEventCreate
+from microgreensautomationsystem.core.enums import SystemState, SystemType
 
 app = FastAPI()
 
@@ -35,7 +36,7 @@ def create_system_event(system_event:SystemEventCreate, db:Session=Depends(get_d
     return SystemEvent(**db_system_event.__dict__)
 
 @app.get("/api/system_events/{system_type}/last")
-def read_last_system_event(system_type:str, db:Session=Depends(get_db)) -> SystemEvent:
+def read_last_system_event(system_type:SystemType, db:Session=Depends(get_db)) -> SystemEvent:
     db_system_event = (
         db.query(FactSystemEvents)
         .filter(FactSystemEvents.system_type == system_type)
@@ -47,7 +48,7 @@ def read_last_system_event(system_type:str, db:Session=Depends(get_db)) -> Syste
     return SystemEvent(**db_system_event.__dict__)
 
 @app.get("/api/system_events/{system_type}/all")
-def read_all_system_events(system_type: str, db: Session = Depends(get_db)) -> List[SystemEvent]:
+def read_all_system_events(system_type:SystemType, db:Session=Depends(get_db)) -> List[SystemEvent]:
     db_system_events = (
         db.query(FactSystemEvents)
         .filter(FactSystemEvents.system_type == system_type)
