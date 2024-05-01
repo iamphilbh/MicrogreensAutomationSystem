@@ -3,27 +3,27 @@ from sqlalchemy import Integer, String, DateTime, Index, ForeignKey, create_engi
 from sqlalchemy.orm import sessionmaker, DeclarativeBase, Mapped, mapped_column
 
 # TODO: Move this to a YAML configuration file.
-DATABASE_URL = "sqlite:///test.db"
+DATABASE_URL = "sqlite:///microgreens.db"
 
 class Base(DeclarativeBase):
     pass
 
-class SystemType(Base):
+class SystemTypes(Base):
     __tablename__ = "system_types"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
     system_type: Mapped[str] = mapped_column(String(5))
 
-class SystemState(Base):
+class SystemStates(Base):
     __tablename__ = "system_states"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
     system_state: Mapped[str] = mapped_column(String(3))
 
-class SystemEvent(Base):
+class SystemEvents(Base):
     __tablename__ = "system_events"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
     system_type_id: Mapped[int] = mapped_column(Integer, ForeignKey("system_types.id"))
     system_state_id: Mapped[int] = mapped_column(Integer, ForeignKey("system_states.id"))
     system_event_timestamp: Mapped[datetime] = mapped_column(DateTime)
