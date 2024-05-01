@@ -160,3 +160,4 @@ cython_debug/
 #.idea/
 
 repo_structure_template.txt
+*.db

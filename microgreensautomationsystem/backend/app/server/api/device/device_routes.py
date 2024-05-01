@@ -2,14 +2,11 @@ from typing import Dict
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from pydantic import BaseModel
 
 from .mqtt_client import MQTTClientWrapper
+from microgreensautomationsystem.backend.app.server.models.device.pydantic_models import System
 
 mqtt_client = MQTTClientWrapper()
-
-class LightState(BaseModel):
-    state: str
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -27,8 +24,8 @@ app = FastAPI(lifespan=lifespan)
 async def root() -> Dict:
     return {"message": "Hello, World!"}
 
-@app.post("/change_light_state")
-async def change_light_state(light_state: LightState) -> Dict:
-    # Publish a message to the "light/switch" topic
-    await mqtt_client.publish(topic="light/switch", message=light_state.state)
-    return {"light_state": light_state.state, "status": "sent"}
+@app.post("/change_system_state")
+async def change_system_state(system: System) -> Dict:
+    topic = f"{system.system_type.value}/switch"
+    await mqtt_client.publish(topic=topic, message=system.system_state.value)
+    return {"system_type": system.system_type.value, "system_state": system.system_state.value, "request_status": "sent"}

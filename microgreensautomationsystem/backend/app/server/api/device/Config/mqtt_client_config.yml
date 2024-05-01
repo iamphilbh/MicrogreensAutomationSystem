@@ -6,3 +6,5 @@ mqtt:
   clean_session: true
   subscribe_topics: 
     - "light/state"
+    - "water/state"
+    - "fan/state"

@@ -2,5 +2,6 @@ fastapi
 gmqtt
 pydantic
 uvicorn
-htppx
+httpx
 pyyaml
+sqlalchemy
