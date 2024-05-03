@@ -1,5 +1,5 @@
 mqtt:
-  client_id: "fastapi_mqtt_client"
+  client_id: "device_api_mqtt_client"
   host: "localhost"
   port: 1883
   keepalive: 60

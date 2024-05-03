@@ -27,7 +27,7 @@ def get_db():
 def root() -> Dict:
     return {"message": "Hello, World! This is the database API."}
 
-@app.post("/api/system_events/create")
+@app.post("/api/database/system_events/create")
 def create_system_event(system_event:SystemEventCreate, db:Session=Depends(get_db)) -> SystemEventRead:
     """
     Create a new system event in the database
@@ -59,7 +59,7 @@ def create_system_event(system_event:SystemEventCreate, db:Session=Depends(get_d
         record_created_timestamp=db_system_event.record_created_timestamp
     )
 
-@app.get("/api/system_events/{system_type}/last")
+@app.get("/api/database/system_events/{system_type}/last")
 def read_last_system_event(system_type:SystemType, db:Session=Depends(get_db)) -> SystemEventRead:
     """
     Get the last system event for the specified system type
@@ -83,7 +83,7 @@ def read_last_system_event(system_type:SystemType, db:Session=Depends(get_db)) -
         record_created_timestamp=db_system_event.SystemEvents.record_created_timestamp
     )
 
-@app.get("/api/system_events/{system_type}/all")
+@app.get("/api/database/system_events/{system_type}/all")
 def read_all_system_events(system_type:SystemType, db:Session=Depends(get_db)) -> List[SystemEventRead]:
     """
     Query all system events for the specified system type

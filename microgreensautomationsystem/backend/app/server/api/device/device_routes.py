@@ -22,10 +22,10 @@ app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 async def root() -> Dict:
-    return {"message": "Hello, World!"}
+    return {"message": "Hello, World! This is the device API."}
 
-@app.post("/change_system_state")
-async def change_system_state(system: System) -> Dict:
+@app.post("/api/device/system_events/activate")
+async def activate_switch(system: System) -> Dict:
     topic = f"{system.system_type.value}/switch"
     await mqtt_client.publish(topic=topic, message=system.system_state.value)
     return {"system_type": system.system_type.value, "system_state": system.system_state.value, "request_status": "sent"}
