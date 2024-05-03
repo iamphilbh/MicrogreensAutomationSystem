@@ -22,7 +22,7 @@ app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 async def root() -> Dict:
-    return {"message": "Hello, World!"}
+    return {"message": "Hello, World! This is the device API."}
 
 @app.post("/change_system_state")
 async def change_system_state(system: System) -> Dict:

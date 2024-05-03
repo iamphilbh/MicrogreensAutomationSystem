@@ -1,30 +1,41 @@
 import json
-import yaml
-import os
 import asyncio
 from typing import List, Dict
 from gmqtt import Client as MQTTClient, Subscription
 import httpx
 
 from microgreensautomationsystem.core.logger import SharedLogger
+from microgreensautomationsystem.core.common import Common
 
-class MQTTClientWrapper:
+class MQTTClientWrapper(Common):
     def __init__(self):
         self.last_message = None
         self.logger = SharedLogger.get_logger()
-        # TODO: Trnasfer this to a common/base python file
-        # This is the full path since uvicorn runs from the root directory
-        with open(os.path.join("microgreensautomationsystem", "backend", "app", "server", "api", "device", "Config", "mqtt_client_config.yml")) as stream:
-            try:
-                config = yaml.safe_load(stream)
-                self._client_id = config["mqtt"]["client_id"]
-                self._host = config["mqtt"]["host"]
-                self._port = config["mqtt"]["port"]
-                self._subscribe_topics = config["mqtt"]["subscribe_topics"]
-            except yaml.YAMLError as exc:
-                print(exc)
-
+        self._mqtt_config = self.open_config_file(self.config_file_path, "mqtt_config", "yaml")
+        self._client_id = self.mqtt_config["mqtt"]["client_id"]
+        self._host = self.mqtt_config["mqtt"]["host"]
+        self._port = self.mqtt_config["mqtt"]["port"]
+        self._subscribe_topics = self.mqtt_config["mqtt"]["subscribe_topics"]
         self._client = MQTTClient(self.client_id)
+
+    @property
+    def config_file_path(self) -> List[str]:
+        return ["microgreensautomationsystem", "backend", "app", "server", "config"]
+    
+    @property
+    def mqtt_config(self) -> Dict:
+        if not self._mqtt_config:
+            raise ValueError("MQTT config is not set")
+
+        if "mqtt" not in self._mqtt_config:
+            raise ValueError("MQTT config is not set")
+
+        required_keys = ["client_id", "host", "port", "subscribe_topics"]
+        for key in required_keys:
+            if key not in self._mqtt_config["mqtt"].keys():
+                raise ValueError(f"{key} is not set in MQTT config")
+
+        return self._config
 
     @property
     def client(self) -> MQTTClient:
@@ -78,7 +89,7 @@ class MQTTClientWrapper:
         system_state = system_event.get("system_state")
         SharedLogger.get_logger().info(f"Saving {system_type} state ({system_state}) to database...")
 
-        url = "http://localhost:8000/system_events/"
+        url = "http://localhost:8000//api/system_events/create" # TODO: Move to config
         headers = {"Content-Type": "application/json"}
 
         async with httpx.AsyncClient() as client:
