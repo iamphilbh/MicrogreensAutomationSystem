@@ -14,8 +14,8 @@ class Common:
 
     def open_config_file(self, file_path: List[str], file_name:str, file_type:str) -> Dict:
         try:
-            with open(os.path.join(*file_path, file_name, ".", file_type)) as stream:
-                if file_type == "yaml":
+            with open(os.path.join(*file_path, f"{file_name}.{file_type}")) as stream:
+                if file_type == "yaml" or file_type == "yml":
                     return yaml.safe_load(stream)
                 elif file_type == "json":
                     return json.load(stream)

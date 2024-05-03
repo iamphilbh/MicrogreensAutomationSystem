@@ -11,7 +11,7 @@ class MQTTClientWrapper(Common):
     def __init__(self):
         self.last_message = None
         self.logger = SharedLogger.get_logger()
-        self._mqtt_config = self.open_config_file(self.config_file_path, "mqtt_config", "yaml")
+        self._mqtt_config = self.open_config_file(self.config_file_path, "mqtt_client_config", "yml")
         self._client_id = self.mqtt_config["mqtt"]["client_id"]
         self._host = self.mqtt_config["mqtt"]["host"]
         self._port = self.mqtt_config["mqtt"]["port"]
@@ -20,7 +20,7 @@ class MQTTClientWrapper(Common):
 
     @property
     def config_file_path(self) -> List[str]:
-        return ["microgreensautomationsystem", "backend", "app", "server", "config"]
+        return ["microgreensautomationsystem", "backend", "app", "server", "api", "device", "config"]
     
     @property
     def mqtt_config(self) -> Dict:
@@ -35,7 +35,7 @@ class MQTTClientWrapper(Common):
             if key not in self._mqtt_config["mqtt"].keys():
                 raise ValueError(f"{key} is not set in MQTT config")
 
-        return self._config
+        return self._mqtt_config
 
     @property
     def client(self) -> MQTTClient:
@@ -89,7 +89,7 @@ class MQTTClientWrapper(Common):
         system_state = system_event.get("system_state")
         SharedLogger.get_logger().info(f"Saving {system_type} state ({system_state}) to database...")
 
-        url = "http://localhost:8000//api/system_events/create" # TODO: Move to config
+        url = "http://localhost:8080/api/database/system_events/create" # TODO: Move to config
         headers = {"Content-Type": "application/json"}
 
         async with httpx.AsyncClient() as client:
@@ -97,6 +97,8 @@ class MQTTClientWrapper(Common):
 
         if response.status_code != 200:
             SharedLogger.get_logger().error(f"Failed to save system state to database: {response.text}")
+        else:
+            SharedLogger.get_logger().info(f"Successfully saved {system_type} state ({system_state}) to database")
 
     async def publish(self, topic, message):
         self.client.publish(topic, message, qos=0)
