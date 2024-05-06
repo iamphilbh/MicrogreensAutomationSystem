@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from .mqtt_client import MQTTClientWrapper
-from microgreensautomationsystem.backend.app.server.models.device.pydantic_models import System
+from .pydantic_models import System
 
 mqtt_client = MQTTClientWrapper()
 

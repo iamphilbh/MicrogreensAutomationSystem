@@ -6,8 +6,8 @@ from fastapi.params import Depends
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
-from microgreensautomationsystem.backend.app.server.models.database.sqlalchemy_models import SessionLocal, Base, engine, SystemEvents, SystemTypes, SystemStates
-from microgreensautomationsystem.backend.app.server.models.database.pydantic_models import SystemEventRead, SystemEventCreate
+from .sqlalchemy_models import engine, SessionLocal, Base, SystemEvents, SystemTypes, SystemStates
+from .pydantic_models import SystemEventRead, SystemEventCreate
 from microgreensautomationsystem.core.enums import SystemType
 
 app = FastAPI()
