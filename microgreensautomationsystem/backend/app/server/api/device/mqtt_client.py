@@ -2,20 +2,22 @@ import json
 import asyncio
 from typing import List, Dict
 from gmqtt import Client as MQTTClient, Subscription
-import httpx
 
 from microgreensautomationsystem.core.logger import SharedLogger
 from microgreensautomationsystem.core.common import Common
+from .db_client import DBClientWrapper
 
 class MQTTClientWrapper(Common):
     def __init__(self):
         self.last_message = None
         self.logger = SharedLogger.get_logger()
-        self._mqtt_config = self.open_config_file(self.config_file_path, "mqtt_client_config", "yml")
-        self._client_id = self.mqtt_config["mqtt"]["client_id"]
-        self._host = self.mqtt_config["mqtt"]["host"]
-        self._port = self.mqtt_config["mqtt"]["port"]
-        self._subscribe_topics = self.mqtt_config["mqtt"]["subscribe_topics"]
+        self.db_client = DBClientWrapper()
+
+        self._config = self.open_config_file(self.config_file_path, "mqtt_client_config", "yml")
+        self._client_id = self.config["mqtt"]["client_id"]
+        self._host = self.config["mqtt"]["host"]
+        self._port = self.config["mqtt"]["port"]
+        self._subscribe_topics = self.config["mqtt"]["subscribe_topics"]
         self._client = MQTTClient(self.client_id)
 
     @property
@@ -23,19 +25,18 @@ class MQTTClientWrapper(Common):
         return ["microgreensautomationsystem", "backend", "app", "server", "api", "device", "config"]
     
     @property
-    def mqtt_config(self) -> Dict:
-        if not self._mqtt_config:
+    def config(self) -> Dict:
+        if not self._config:
             raise ValueError("MQTT config is not set")
 
-        if "mqtt" not in self._mqtt_config:
-            raise ValueError("MQTT config is not set")
+        if "mqtt" not in self._config:
+            raise ValueError("Key 'mqtt' is not set in MQTT config")
 
         required_keys = ["client_id", "host", "port", "subscribe_topics"]
         for key in required_keys:
-            if key not in self._mqtt_config["mqtt"].keys():
+            if key not in self._config["mqtt"].keys():
                 raise ValueError(f"{key} is not set in MQTT config")
-
-        return self._mqtt_config
+        return self._config
 
     @property
     def client(self) -> MQTTClient:
@@ -82,23 +83,7 @@ class MQTTClientWrapper(Common):
     def on_message(self, client, topic, payload, qos, properties):
         self.last_message = json.loads(payload.decode("utf-8"))
         SharedLogger.get_logger().info(f"Received message: {self.last_message}")
-        asyncio.create_task(self.save_system_event_to_db(self.last_message))
-
-    async def save_system_event_to_db(self, system_event: Dict) -> None:
-        system_type = system_event.get("system_type")
-        system_state = system_event.get("system_state")
-        SharedLogger.get_logger().info(f"Saving {system_type} state ({system_state}) to database...")
-
-        url = "http://localhost:8080/api/database/system_events/create" # TODO: Move to config
-        headers = {"Content-Type": "application/json"}
-
-        async with httpx.AsyncClient() as client:
-            response = await client.post(url, headers=headers, json=system_event)
-
-        if response.status_code != 200:
-            SharedLogger.get_logger().error(f"Failed to save system state to database: {response.text}")
-        else:
-            SharedLogger.get_logger().info(f"Successfully saved {system_type} state ({system_state}) to database")
+        asyncio.create_task(self.db_client.write_system_event(self.last_message))
 
     async def publish(self, topic, message):
         self.client.publish(topic, message, qos=0)

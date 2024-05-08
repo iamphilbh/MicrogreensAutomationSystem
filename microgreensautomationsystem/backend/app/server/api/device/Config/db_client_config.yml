@@ -1,0 +1,5 @@
+db:
+  host: "localhost"
+  port: 8080
+  api_endpoints: 
+    - "/api/database/system_events/create"
