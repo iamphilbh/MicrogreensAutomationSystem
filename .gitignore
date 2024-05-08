@@ -161,3 +161,4 @@ cython_debug/
 
 repo_structure_template.txt
 *.db
+*/frontend/demo-app/node_modules/
